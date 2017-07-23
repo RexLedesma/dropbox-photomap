@@ -6,6 +6,7 @@ google maps
 from os import environ
 from os.path import join, dirname
 from base64 import b64encode
+from multiprocessing.dummy import Pool as ThreadPool
 from dotenv import load_dotenv
 from flask_googlemaps import Map
 import dropbox
@@ -25,8 +26,9 @@ def list_folder_photos_locations():
     # remove files that do not have location metadata
     entries = [f for f in photos if f.media_info and f.media_info.get_metadata().location]
 
-    # map data to lat/long json
-    markers = [convert_metadata_to_marker(metadata) for metadata in entries]
+    # map data to lat/long json with threads to make it faster
+    pool = ThreadPool(20)
+    markers = pool.map(convert_metadata_to_marker, entries)
 
     return markers
 
@@ -45,11 +47,11 @@ def convert_metadata_to_marker(metadata):
 
 def get_thumbnail_uri(metadata):
     """
-    Returns the uri representation of the thumbnail of dropbox file.
+    Returns the base64 uri representation of the thumbnail of dropbox file.
     """
     path = metadata.path_lower
     print 'processing file: {}'.format(path)
-    _, response = DBX.files_get_thumbnail(path)
+    _, response = DBX.files_get_thumbnail(path, size=dropbox.files.ThumbnailSize.w640h480)
     uri = ("data:" + response.headers['Content-Type'] + ";" + "base64," +
            b64encode(response.content))
 
