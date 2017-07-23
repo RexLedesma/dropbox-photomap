@@ -80,8 +80,6 @@ def create_photomap():
         ),
         lat=lat,
         lng=lng,
-        cluster=True,
-        cluster_gridsize=50,
         markers=markers,
         cluster_imagepath='static/m'
         )
